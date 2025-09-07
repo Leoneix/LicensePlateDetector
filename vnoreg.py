@@ -1,40 +1,50 @@
 import cv2
+import os
 
-model = "haarcascade_russian_plate_number - Copy.xml"
+def main():
+    os.makedirs("plates", exist_ok=True)
 
-cap = cv2.VideoCapture(0)
-
-cap.set(3, 640) #width
-cap.set(4, 480) #height
-
-min_area = 500
-while True:
-    success, img = cap.read()
-
+    model = "haarcascade_russian_plate_number.xml"
     plate_cascade = cv2.CascadeClassifier(model)
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    plates = plate_cascade.detectMultiScale(img_gray, 1.1, 4)
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 640)  
+    cap.set(4, 480)  
 
-    for (x,y,w,h) in plates:
-        area = w * h
-
-        if area > min_area:
-            cv2.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 2)
-            cv2.putText(img, "Number Plate", (x,y-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
-
-            img_roi = img[y: y+h, x:x+w]
-            cv2.imshow("Number", img_roi)
-
-    cv2.imshow("Result", img)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    min_area = 500
     count = 0
-    if cv2.waitKey(1) & 0xFF == ord('s'):
-        cv2.imwrite("plates/scaned_img_" + str(count) + ".jpg", img_roi)
-        cv2.rectangle(img, (0,200), (640,300), (0,255,0), cv2.FILLED)
-        cv2.putText(img, "Plate Saved", (150, 265), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 255), 2)
-        cv2.imshow("Results",img)
-        cv2.waitKey(500)
-        count += 1
+
+    while True:
+        success, img = cap.read()
+        if not success:
+            break
+
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        plates = plate_cascade.detectMultiScale(img_gray, 1.1, 4)
+
+        for (x, y, w, h) in plates:
+            area = w * h
+            if area > min_area:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv2.putText(img, "Number Plate", (x, y-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
+                img_roi = img[y:y+h, x:x+w]
+                cv2.imshow("Number", img_roi)
+
+        cv2.imshow("Result", img)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+        elif key == ord('s') and 'img_roi' in locals():
+            cv2.imwrite(f"plates/scanned_img_{count}.jpg", img_roi)
+            cv2.rectangle(img, (0,200), (640,300), (0,255,0), cv2.FILLED)
+            cv2.putText(img, "Plate Saved", (150, 265), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0,0,255), 2)
+            cv2.imshow("Result", img)
+            cv2.waitKey(500)
+            count += 1
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
